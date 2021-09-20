@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test</title>
+  </head>
+  <body>
+    <div id="parent">
+      <div id="child1">bla bla</div>
+      <div id="child2">
+        fooobar
+        <pre>fo   foo foo </pre>
+        fooooo
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.addEventListener('mouseup', function (e) {
+          var selection;
+
+          if (window.getSelection) {
+            selection = window.getSelection();
+          } else if (document.selection) {
+            selection = document.selection.createRange();
+          }
+
+          if (
+            selection.toString().trim().replace(/\s+/, ' ') !== '' && // no text is selected
+            (selection.toString().indexOf(' ') === -1 || e.ctrlKey) // its a single word; if not, control key is pressed
+          ) {
+            var rangeObject = getRangeObject(selection);
+
+            chrome.extension
+              .getURL('test-popup-template.mustache')
+              .then((response) => response.text())
+              .then((template) => {
+                var word = selection.toString().trim().replace(/\s+/, ' ');
+
+                var rendered = Mustache.render(template, {
+                  word,
+                  mainLeft: 300,
+                  mainTop: 300,
+                  arrowTop: 288,
+                  arrowLeft: 138,
+                  meaning: 'some junk meaning',
+                });
+                var bubbleHostUnattached = document.createElement('div');
+                bubbleHostUnattached.setAttribute('id', 'bubble-host');
+                document.body.appendChild(bubbleHostUnattached);
+                var bubbleHost = document.querySelector('#bubble-host');
+                var bubbleHostRoot = bubbleHost.createShadowRoot();
+                bubbleHostRoot.innerHTML = rendered;
+                alert('"' + +'" was selected at ' + e.pageX + '/' + e.pageY);
+              });
+          }
+        });
+      });
+
+      function getRangeObject(selectionObject) {
+        if (selectionObject.getRangeAt) {
+          return selectionObject.getRangeAt(0);
+        } else {
+          // Safari!
+          var range = document.createRange();
+          range.setStart(
+            selectionObject.anchorNode,
+            selectionObject.anchorOffset
+          );
+          range.setEnd(selectionObject.focusNode, selectionObject.focusOffset);
+          return range;
+        }
+      }
+    </script>
+  </body>
+</html>
